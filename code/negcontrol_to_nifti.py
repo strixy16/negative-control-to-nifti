@@ -52,6 +52,8 @@ def negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, outputDir,
 
 
 def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negControlTypeList, crop=True, randomSeed=10):
+    # Image processed counter to have unique file names
+    n = 0
 
     if not os.path.exists(outputDir):
             print("Creating output directory:", outputDir)
@@ -62,6 +64,7 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
     ctSeriesIDList = pdImageInfo["series_CT"].unique()
 
     for ctSeriesID in ctSeriesIDList:
+        n += 1
         ctSeriesInfo = pdImageInfo.loc[pdImageInfo["series_CT"] == ctSeriesID]
         patID = ctSeriesInfo.iloc[0]["patient_ID"]
         print("Processing ", patID, "...")
@@ -146,7 +149,7 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
                         alignedROIImage = alignImages(ctImage, roiImage)
                         segmentationLabel = getROIVoxelLabel(alignedROIImage)
 
-                        completeOutputPath = os.path.join(outputDir, patID) 
+                        completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
                         
                         negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, randomSeed=randomSeed)
 
