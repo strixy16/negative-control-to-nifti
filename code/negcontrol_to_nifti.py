@@ -10,45 +10,61 @@ from typing import Optional
 import os
 import time
 import datetime
+import yaml
+from argparse import ArgumentParser
+
+def parser():
+    parser = ArgumentParser()
+
+    parser.add_argument("config_file", type=str,
+                        help="Path to YAML file with settings for the run")
+    
+    return parser.parse_known_args()[0]
+
 
 def negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, outputDir, 
                       negControlTypeList: Optional[list] = None, crop=True, update=False, randomSeed=10):
   
-    if negControlTypeList is None:
-        negControlTypeList = ["shuffled_full", "randomized_full", "randomized_sampled_full",
-                              "shuffled_roi", "randomized_roi", "randomized_sampled_roi",
-                              "shuffled_non_roi", "randomized_non_roi", "randomized_sampled_non_roi"]
-        
-    if not os.path.exists(outputDir):
-        os.makedirs(outputDir)
+    try:
+        if negControlTypeList is None:
+            negControlTypeList = ["shuffled_full", "randomized_full", "randomized_sampled_full",
+                                "shuffled_roi", "randomized_roi", "randomized_sampled_roi",
+                                "shuffled_non_roi", "randomized_non_roi", "randomized_sampled_non_roi"]
+            
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
 
-    if crop:
-        ctImage, alignedROIImage = getCroppedImages(ctImage, alignedROIImage, segmentationLabel)
-        segNiftiOutPath = os.path.join(outputDir, "cropped_segmentation_mask.nii.gz")
-    else:
-        segNiftiOutPath = os.path.join(outputDir, "segmentation_mask.nii.gz")
-
-    for controlType in negControlTypeList:
-        print(controlType)
         if crop:
-            outFileName = "cropped_CT_" + controlType + ".nii.gz"
+            ctImage, alignedROIImage = getCroppedImages(ctImage, alignedROIImage, segmentationLabel)
+            
+            segNiftiOutPath = os.path.join(outputDir, "cropped_segmentation_mask.nii.gz")
         else:
-            outFileName = "CT_" + controlType + ".nii.gz"
-        fullOutPath = os.path.join(outputDir, outFileName)
+            segNiftiOutPath = os.path.join(outputDir, "segmentation_mask.nii.gz")
 
-        if os.path.exists(fullOutPath) and not update:
-            print(controlType, " negative control already exists.")
-        else:
-            negControlImage = applyNegativeControl(nc_type = controlType,
-                                                baseImage = ctImage,
-                                                baseROI = alignedROIImage,
-                                                roiLabel = segmentationLabel,
-                                                randomSeed = randomSeed)
-            sitk.WriteImage(negControlImage, fullOutPath)
+        for controlType in negControlTypeList:
+            print(controlType)
+            if crop:
+                outFileName = "cropped_CT_" + controlType + ".nii.gz"
+            else:
+                outFileName = "CT_" + controlType + ".nii.gz"
+            fullOutPath = os.path.join(outputDir, outFileName)
 
-    sitk.WriteImage(alignedROIImage, segNiftiOutPath)
+            if os.path.exists(fullOutPath) and not update:
+                print(controlType, " negative control already exists.")
+            else:
+                negControlImage = applyNegativeControl(nc_type = controlType,
+                                                    baseImage = ctImage,
+                                                    baseROI = alignedROIImage,
+                                                    roiLabel = segmentationLabel,
+                                                    randomSeed = randomSeed)
+                sitk.WriteImage(negControlImage, fullOutPath)
 
-    return
+        sitk.WriteImage(alignedROIImage, segNiftiOutPath)
+        return
+
+    except Exception as e:
+        print(str(e))
+        print("Processing error occurred. Skipping patient, please review.")
 
 
 def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negControlTypeList, crop=True, randomSeed=10):
@@ -146,8 +162,12 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
                         except RuntimeError as e:
                             print(str(e))
 
-                        alignedROIImage = alignImages(ctImage, roiImage)
-                        segmentationLabel = getROIVoxelLabel(alignedROIImage)
+                        try:
+                            alignedROIImage = alignImages(ctImage, roiImage)
+                            segmentationLabel = getROIVoxelLabel(alignedROIImage)
+                        except Exception as e:
+                            print(str(e))
+                            print("Processing error occurred for ", patID, ". Skipping patient, please review.")
 
                         completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
                         
@@ -159,27 +179,19 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
 if __name__ == "__main__":
     start = time.time()
 
-    # SCRIPT SETUPT VARIABLES HERE
-    # Directory that DICOMS are located
-    imageDirPath = "/Users/katyscott/Documents/RADCURE/"
-    # Where to save converted niftis
-    outputDir = "/Users/katyscott/Documents/RADCURE/nc_niftis/"
-    # Output from med-imagetools run csv
-    imageFileListPath = "/Users/katyscott/Documents/RADCURE/.imgtools/imgtools_RADCURE.csv"
-    segType = "RTSTRUCT"
+    args = parser()
+    
+    config = yaml.safe_load(open(args.config_file))
 
-    # If segmentation is RTSTRUCT, need ROI name
-    roiNames = "GTVp*" 
+    main(imageDirPath = config['imageDirPath'], 
+         outputDir = config['outputDir'], 
+         imageFileListPath = config['imageFileListPath'],
+         segType = config['segType'],
+         roiNames = config['roiNameRegex'], 
+         negControlTypeList = config['readiiNegControlTypeList'], 
+         crop = config['crop'], 
+         randomSeed = config['randomSeed'])
 
-    # Which negative controls to save out
-    negControlTypeList = ["shuffled_roi", "randomized_roi", "randomized_sampled_roi"]
 
-    # Whether to crop the image before generating negative control 
-    crop = True
-
-    # Random seed to have reproducible negative controls
-    randomSeed = 10
-
-    main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negControlTypeList, crop, randomSeed)
     print(time.time() - start)
 

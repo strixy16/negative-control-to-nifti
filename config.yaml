@@ -1,0 +1,20 @@
+# SCRIPT SETUPT VARIABLES HERE
+# Directory that DICOMS are located
+imageDirPath: "/Users/katyscott/Documents/RADCURE/"
+# Where to save converted niftis
+outputDir: "/Users/katyscott/Documents/RADCURE/nc_niftis/"
+# Output from med-imagetools run csv
+imageFileListPath: "/Users/katyscott/Documents/RADCURE/.imgtools/imgtools_RADCURE.csv"
+segType: "RTSTRUCT"
+
+# If segmentation is RTSTRUCT, need ROI name
+roiNameRegex: "GTVp*" 
+
+# Which negative controls to save out from READII
+readiiNegControlTypeList: ["shuffled_roi", "randomized_roi", "randomized_sampled_roi"]
+
+# Whether to crop the image before generating negative control 
+crop: True
+
+# Random seed to have reproducible negative controls
+randomSeed: 10
