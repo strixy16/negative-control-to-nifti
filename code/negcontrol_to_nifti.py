@@ -87,8 +87,14 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
         # Get absolute path to CT image files
         ctDirPath = os.path.join(imageDirPath, ctSeriesInfo.iloc[0]["folder_CT"])
 
-        # Load CT by passing in specific series to find in a directory
-        ctImage = read_dicom_series(path=ctDirPath, series_id=ctSeriesID)
+        try:
+            # Load CT by passing in specific series to find in a directory
+            ctImage = read_dicom_series(path=ctDirPath, series_id=ctSeriesID)
+        except Exception as e:
+            print(str(e))
+            print("Processing error occurred for ", patID, ". Could not load CT. Skipping patient, please review.")
+            continue
+
 
         # Get list of segmentations to iterate over
         segSeriesIDList = ctSeriesInfo["series_seg"].unique()
@@ -161,17 +167,21 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
                         # Catching CT and segmentation size mismatch error
                         except RuntimeError as e:
                             print(str(e))
+                            continue
 
                         try:
                             alignedROIImage = alignImages(ctImage, roiImage)
                             segmentationLabel = getROIVoxelLabel(alignedROIImage)
+
+                            completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
+                        
+                            negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, update, randomSeed=randomSeed)
+
                         except Exception as e:
                             print(str(e))
                             print("Processing error occurred for ", patID, ". Skipping patient, please review.")
+                            continue
 
-                        completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
-                        
-                        negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, update, randomSeed=randomSeed)
 
     print("Pipeline complete")
         
