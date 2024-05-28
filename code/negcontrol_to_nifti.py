@@ -67,7 +67,7 @@ def negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, outputDir,
         print("Processing error occurred. Skipping patient, please review.")
 
 
-def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negControlTypeList, crop=True, randomSeed=10):
+def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negControlTypeList, crop=True, update=False, randomSeed=10):
     # Image processed counter to have unique file names
     n = 0
 
@@ -80,7 +80,6 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
     ctSeriesIDList = pdImageInfo["series_CT"].unique()
 
     for ctSeriesID in ctSeriesIDList:
-        n += 1
         ctSeriesInfo = pdImageInfo.loc[pdImageInfo["series_CT"] == ctSeriesID]
         patID = ctSeriesInfo.iloc[0]["patient_ID"]
         print("Processing ", patID, "...")
@@ -132,6 +131,7 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
                 else:
                     # Loop over each ROI contained in the segmentation to perform radiomic feature extraction
                     for roiImageName in segImages:
+                        n += 1
                         # Get sitk Image object for this ROI
                         roiImage = segImages[roiImageName]
 
@@ -171,7 +171,7 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
 
                         completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
                         
-                        negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, randomSeed=randomSeed)
+                        negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, update, randomSeed=randomSeed)
 
     print("Pipeline complete")
         
@@ -190,6 +190,7 @@ if __name__ == "__main__":
          roiNames = config['roiNameRegex'], 
          negControlTypeList = config['readiiNegControlTypeList'], 
          crop = config['crop'], 
+         update = config['update'],
          randomSeed = config['randomSeed'])
 
 
