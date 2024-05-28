@@ -16,5 +16,8 @@ readiiNegControlTypeList: ["shuffled_roi", "randomized_roi", "randomized_sampled
 # Whether to crop the image before generating negative control 
 crop: True
 
+# Whether to overwrite existing files and update them
+update: False
+
 # Random seed to have reproducible negative controls
 randomSeed: 10
