@@ -100,88 +100,92 @@ def main(imageDirPath, outputDir, imageFileListPath, segType, roiNames, negContr
         segSeriesIDList = ctSeriesInfo["series_seg"].unique()
 
         for segCount, segSeriesID in enumerate(segSeriesIDList):
-                segSeriesInfo = ctSeriesInfo.loc[ctSeriesInfo["series_seg"] == segSeriesID]
+                try:
+                    segSeriesInfo = ctSeriesInfo.loc[ctSeriesInfo["series_seg"] == segSeriesID]
 
-                # Check that a single segmentation file is being processed
-                if len(segSeriesInfo) > 1:
-                    # Check that if there are multiple rows that it's not due to a CT with subseries (this is fine, the whole series is loaded)
-                    if not segSeriesInfo.duplicated(subset=["series_CT"], keep=False).all():
-                        raise RuntimeError(
-                            "Some kind of duplication of segmentation and CT matches not being caught. Check seg_and_ct_dicom_list in radiogenomic_output."
-                        )
+                    # Check that a single segmentation file is being processed
+                    if len(segSeriesInfo) > 1:
+                        # Check that if there are multiple rows that it's not due to a CT with subseries (this is fine, the whole series is loaded)
+                        if not segSeriesInfo.duplicated(subset=["series_CT"], keep=False).all():
+                            raise RuntimeError(
+                                "Some kind of duplication of segmentation and CT matches not being caught. Check seg_and_ct_dicom_list in radiogenomic_output."
+                            )
 
-                # Get absolute path to segmentation image file
-                segFilePath = os.path.join(
-                    imageDirPath, segSeriesInfo.iloc[0]["file_path_seg"]
-                )
-                # Get dictionary of ROI sitk Images for this segmentation file
-                segImages = loadSegmentation(
-                    segFilePath,
-                    modality=segSeriesInfo.iloc[0]["modality_seg"],
-                    baseImageDirPath=ctDirPath,
-                    roiNames=roiNames,
-                )
-
-                # Check that this series has ROIs to extract from (dictionary isn't empty)
-                if not segImages:
-                    print(
-                        "CT ",
-                        ctSeriesID,
-                        "and segmentation ",
-                        segSeriesID,
-                        " has no ROIs or no ROIs with the label ",
-                        roiNames,
-                        ". Moving to next segmentation.",
+                    # Get absolute path to segmentation image file
+                    segFilePath = os.path.join(
+                        imageDirPath, segSeriesInfo.iloc[0]["file_path_seg"]
+                    )
+                    # Get dictionary of ROI sitk Images for this segmentation file
+                    segImages = loadSegmentation(
+                        segFilePath,
+                        modality=segSeriesInfo.iloc[0]["modality_seg"],
+                        baseImageDirPath=ctDirPath,
+                        roiNames=roiNames,
                     )
 
-                else:
-                    # Loop over each ROI contained in the segmentation to perform radiomic feature extraction
-                    for roiImageName in segImages:
-                        n += 1
-                        # Get sitk Image object for this ROI
-                        roiImage = segImages[roiImageName]
+                    # Check that this series has ROIs to extract from (dictionary isn't empty)
+                    if not segImages:
+                        print(
+                            "CT ",
+                            ctSeriesID,
+                            "and segmentation ",
+                            segSeriesID,
+                            " has no ROIs or no ROIs with the label ",
+                            roiNames,
+                            ". Moving to next segmentation.",
+                        )
 
-                        # Exception catch for if the segmentation dimensions do not match that original image
-                        try:
-                            # Check if segmentation just has an extra axis with a size of 1 and remove it
-                            if roiImage.GetDimension() > 3 and roiImage.GetSize()[3] == 1:
-                                roiImage = flattenImage(roiImage)
+                    else:
+                        # Loop over each ROI contained in the segmentation to perform radiomic feature extraction
+                        for roiImageName in segImages:
+                            n += 1
+                            # Get sitk Image object for this ROI
+                            roiImage = segImages[roiImageName]
 
-                            # Check that image and segmentation mask have the same dimensions
-                            if ctImage.GetSize() != roiImage.GetSize():
-                                # Checking if number of segmentation slices is less than CT
-                                if ctImage.GetSize()[2] > roiImage.GetSize()[2]:
-                                    print(
-                                        "Slice number mismatch between CT and segmentation for",
-                                        patID,
-                                        ". Padding segmentation to match.",
-                                    )
-                                    roiImage = padSegToMatchCT(
-                                        ctDirPath, segFilePath, ctImage, roiImage
-                                    )
-                                else:
-                                    raise RuntimeError(
-                                        "CT and ROI dimensions do not match."
-                                    )
+                            # Exception catch for if the segmentation dimensions do not match that original image
+                            try:
+                                # Check if segmentation just has an extra axis with a size of 1 and remove it
+                                if roiImage.GetDimension() > 3 and roiImage.GetSize()[3] == 1:
+                                    roiImage = flattenImage(roiImage)
 
-                        # Catching CT and segmentation size mismatch error
-                        except RuntimeError as e:
-                            print(str(e))
-                            continue
+                                # Check that image and segmentation mask have the same dimensions
+                                if ctImage.GetSize() != roiImage.GetSize():
+                                    # Checking if number of segmentation slices is less than CT
+                                    if ctImage.GetSize()[2] > roiImage.GetSize()[2]:
+                                        print(
+                                            "Slice number mismatch between CT and segmentation for",
+                                            patID,
+                                            ". Padding segmentation to match.",
+                                        )
+                                        roiImage = padSegToMatchCT(
+                                            ctDirPath, segFilePath, ctImage, roiImage
+                                        )
+                                    else:
+                                        raise RuntimeError(
+                                            "CT and ROI dimensions do not match."
+                                        )
 
-                        try:
-                            alignedROIImage = alignImages(ctImage, roiImage)
-                            segmentationLabel = getROIVoxelLabel(alignedROIImage)
+                            # Catching CT and segmentation size mismatch error
+                            except RuntimeError as e:
+                                print(str(e))
+                                continue
 
-                            completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
-                        
-                            negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, update, randomSeed=randomSeed)
+                            try:
+                                alignedROIImage = alignImages(ctImage, roiImage)
+                                segmentationLabel = getROIVoxelLabel(alignedROIImage)
 
-                        except Exception as e:
-                            print(str(e))
-                            print("Processing error occurred for ", patID, ". Skipping patient, please review.")
-                            continue
+                                completeOutputPath = os.path.join(outputDir, (patID + "_" + str(n)))
+                            
+                                negControlToNIFTI(ctImage, alignedROIImage, segmentationLabel, completeOutputPath, negControlTypeList, crop, update, randomSeed=randomSeed)
 
+                            except Exception as e:
+                                print(str(e))
+                                print("Processing error occurred for ", patID, ". Skipping patient, please review.")
+                                continue
+                except Exception as e:
+                    print(str(e))
+                    print("Processing with segmentation processing for ", patID, ". Skipping patient, please review.")
+                    continue
 
     print("Pipeline complete")
         
