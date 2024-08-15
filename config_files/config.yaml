@@ -1,0 +1,19 @@
+# SCRIPT SETUPT VARIABLES HERE 
+# Edge graph output from med-imagetools
+edgeGraphPath: "/Users/katyscott/Documents/RADCURE/.imgtools/imgtools_RADCURE_edges.csv"
+
+# Directory that DICOMS are located in, should be up to the directory in edge graph folder_x
+imageDirPath: "/Users/katyscott/Documents/RADCURE/"
+
+# Where to save converted niftis
+outputDir: "/Users/katyscott/Documents/RADCURE/converted_niftis/"
+
+# If segmentation is RTSTRUCT, need ROI name
+roiNameRegex: "GTVp*" 
+
+# Which negative controls to save out from READII
+controlTypes: ["shuffled_roi", "randomized_roi", "randomized_sampled_roi"]
+controlRegions: ["full", "roi", "non_roi"]
+
+# Random seed to have reproducible negative controls
+randomSeed: 10
