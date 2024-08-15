@@ -62,7 +62,7 @@ def main(imageDirPath, outputDir, imageFileListPath, segType):
             ctImage = read_dicom_series(path=ctDirPath, series_id=ctSeriesID)
 
             # find if patient dir already exists
-            pattern = patID + "*"
+            pattern = patID + "_*"
 
             for filename in os.listdir(outputDir):
                 if re.search(pattern, filename):
