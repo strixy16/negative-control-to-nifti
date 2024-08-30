@@ -1,0 +1,19 @@
+# SCRIPT SETUP VARIABLES HERE 
+# Edge graph output from med-imagetools
+edgeGraphPath: '/cluster/projects/radiomics/PublicDatasets/srcdata/HeadNeck/TCIA_Head-Neck-PET-CT/.imgtools/imgtools_Head-Neck-PET-CT_edges.csv'
+
+# Directory that DICOMS are located in, should be up to the directory in edge graph folder_x
+imageDirPath: '/cluster/projects/radiomics/PublicDatasets/srcdata/HeadNeck/TCIA_Head-Neck-PET-CT'
+
+# Where to save converted niftis
+outputDir: '/cluster/projects/radiomics/PublicDatasets/procdata/HeadNeck/TCIA_Head-Neck-PET-CT/converted_niftis/'
+
+# If segmentation is RTSTRUCT, need ROI name
+roiNameRegex: '^(GTV|GTV1|GTV-P|GTV 67|gtv pet|GTV BOT|GTV 67\.5|GTV 67\.5Gy|GTV primary_70GY|GTV_67\.5gy|GTV_70Gy|GTV_T_67\.5gy|GTV_69Gy|GTV langue|GTVlarynx|GTVp G|GTVp D|GTVp|GTV-p|GTV Primaire|GTV t et N|GTV T et N\+|GTV T|GTV T et N >1 cm|GTV 2 T et N\+|GTV  66 Gy|GTVt|GTV1 fusion TEP|GTV3 GTV a prendre|GTV TEP|GTV p|GTV Primaire 70|GTV T irm|GTV primaire|GTV et GG|GTV 70)$'
+
+# Which negative controls to save out from READII
+controlTypes: ["shuffled", "randomized", "randomized_sampled"]
+controlRegions: ["full", "roi", "non_roi"]
+
+# Random seed to have reproducible negative controls
+randomSeed: 10

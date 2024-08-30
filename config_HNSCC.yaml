@@ -1,18 +1,18 @@
 # SCRIPT SETUPT VARIABLES HERE 
 # Edge graph output from med-imagetools
-edgeGraphPath: "/Users/katyscott/Documents/RADCURE/.imgtools/imgtools_RADCURE_edges.csv"
+edgeGraphPath: "/cluster/projects/radiomics/PublicDatasets/srcdata/HeadNeck/TCIA_HNSCC/.imgtools/imgtools_HNSCC_edges.csv"
 
 # Directory that DICOMS are located in, should be up to the directory in edge graph folder_x
-imageDirPath: "/Users/katyscott/Documents/RADCURE/"
+imageDirPath: "/cluster/projects/radiomics/PublicDatasets/srcdata/HeadNeck/TCIA_HNSCC/"
 
 # Where to save converted niftis
-outputDir: "/Users/katyscott/Documents/RADCURE/converted_niftis/"
+outputDir: "/cluster/projects/radiomics/PublicDatasets/procdata/HeadNeck/TCIA_HNSCC/converted_niftis/"
 
 # If segmentation is RTSTRUCT, need ROI name
-roiNameRegex: "GTVp*" 
+roiNameRegex: "GTVp" 
 
 # Which negative controls to save out from READII
-controlTypes: ["shuffled_roi", "randomized_roi", "randomized_sampled_roi"]
+controlTypes: ["shuffled", "randomized", "randomized_sampled"]
 controlRegions: ["full", "roi", "non_roi"]
 
 # Random seed to have reproducible negative controls

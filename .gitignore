@@ -162,3 +162,5 @@ cython_debug/
 *.dcm
 test_data/
 nc_niftis/
+
+logs
